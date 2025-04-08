@@ -1,1 +1,181 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Réservation - Restaurant Balinais</title>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Montserrat', sans-serif;
+      background-image: url('https://images.unsplash.com/photo-1576014131171-e72ce5c161da?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80');
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      color: white;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      text-align: center;
+      padding: 20px;
+      animation: fadeIn 2s ease-in-out;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(30px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .countdown {
+      font-size: 1.5rem;
+      margin-top: 20px;
+      color: #ffe3fc;
+      background: rgba(0,0,0,0.5);
+      padding: 10px 20px;
+      border-radius: 10px;
+    }
+    .card {
+      background-color: rgba(72, 0, 90, 0.85);
+      color: white;
+      padding: 30px;
+      border-radius: 20px;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+      max-width: 400px;
+      width: 100%;
+      margin-top: 40px;
+      animation: fadeIn 1.5s ease;
+    }
+    input, button {
+      width: 100%;
+      padding: 12px;
+      margin: 10px 0;
+      border-radius: 8px;
+      border: none;
+      font-size: 16px;
+    }
+    input {
+      background-color: #fff;
+      color: #4a0057;
+    }
+    button {
+      background-color: #d87fe9;
+      color: white;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #b55fd0;
+    }
+    .confirmation {
+      margin-top: 20px;
+      color: #ffffff;
+    }
+    @media screen and (max-width: 500px) {
+      h1 { font-size: 1.5rem; }
+      .countdown { font-size: 1rem; padding: 6px 12px; }
+    }
+  </style>
+</head>
+<body>
+  <audio autoplay loop hidden>
+    <source src="https://cdn.pixabay.com/download/audio/2022/03/14/audio_15c396eb51.mp3?filename=soft-balinese-gamelan-2464.mp3" type="audio/mp3">
+  </audio>
+  <h1>🌺 Réservez votre place pour l'ouverture magique à Ubud</h1>
+  <div class="countdown" id="countdown"></div>
 
+  <div class="card">
+    <div id="form">
+      <input type="text" id="name" placeholder="Votre nom" required />
+      <input type="email" id="email" placeholder="Votre email" required />
+      <button onclick="generatePDFAndStore()">Réserver</button>
+    </div>
+    <div id="confirmation" class="confirmation" style="display: none;"></div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script>
+    const countdownEl = document.getElementById("countdown");
+    const openingDate = new Date();
+    openingDate.setHours(19, 0, 0, 0);
+
+    function updateCountdown() {
+      const now = new Date();
+      const diff = openingDate - now;
+      if (diff > 0) {
+        const hours = Math.floor(diff / (1000 * 60 * 60));
+        const minutes = Math.floor((diff / (1000 * 60)) % 60);
+        const seconds = Math.floor((diff / 1000) % 60);
+        countdownEl.textContent = `Ouverture dans ${hours}h ${minutes}m ${seconds}s`;
+      } else {
+        countdownEl.textContent = "🎉 Le restaurant est ouvert !";
+      }
+    }
+    setInterval(updateCountdown, 1000);
+
+    async function generatePDFAndStore() {
+      const name = document.getElementById("name").value;
+      const email = document.getElementById("email").value;
+      const confirmationId = Math.random().toString(36).substr(2, 8).toUpperCase();
+
+      if (!name || !email) {
+        alert("Veuillez remplir tous les champs.");
+        return;
+      }
+
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF('landscape');
+      doc.setFillColor(155, 89, 182);
+      doc.roundedRect(10, 10, 270, 80, 5, 5, 'F');
+      doc.setDrawColor(255);
+      doc.setLineDash([3], 0);
+      doc.line(180, 10, 180, 90);
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(22);
+      doc.text("BOARDING PASS", 15, 25);
+      doc.setFontSize(14);
+      doc.text(`Passenger: ${name}`, 15, 40);
+      doc.text(`Email: ${email}`, 15, 48);
+      doc.text(`Address: Jalan 43, Ubud`, 15, 56);
+      doc.text(`Boarding Time: 19:00`, 15, 64);
+      doc.text(`Confirmation #: ${confirmationId}`, 15, 72);
+      doc.setFontSize(16);
+      doc.text("GATE 01", 200, 30);
+      doc.text("SEAT UB-19", 200, 45);
+      doc.text("DEPARTURE: UBUD", 200, 60);
+      doc.text("19:00", 200, 75);
+      doc.setFontSize(30);
+      doc.text("✈️", 250, 25);
+
+      const qrData = `Name: ${name}\nEmail: ${email}\nID: ${confirmationId}`;
+
+      const qrDiv = document.createElement("div");
+      document.body.appendChild(qrDiv);
+      const qr = new QRCode(qrDiv, {
+        text: qrData,
+        width: 100,
+        height: 100,
+        correctLevel: QRCode.CorrectLevel.H
+      });
+
+      setTimeout(() => {
+        const img = qrDiv.querySelector("img");
+        if (img) {
+          doc.addImage(img.src, 'PNG', 185, 35, 40, 40);
+          doc.save("carte_embarquement_bali.pdf");
+        }
+        qrDiv.remove();
+      }, 500);
+
+      document.getElementById("form").style.display = "none";
+      document.getElementById("confirmation").style.display = "block";
+      document.getElementById("confirmation").innerHTML =
+        `<p>Merci ${name} ! 🎉</p><p>Votre carte d'embarquement a été téléchargée.</p>`;
+    }
+  </script>
+</body>
+</html>
